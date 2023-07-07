@@ -447,14 +447,3 @@ class App():
         self.root.destroy()
         
 
-m = Metronome(tempo=180, beats_per_bar=4)
-a = App(m)
-a.root.mainloop()
-
-
-#%%
-# Write the full metronome output to a wav file for analysis in a DAW
-full = np.array(m.full_output).reshape(-1)
-wavfile.write("metro_output_217_ts_varying.wav", rate=16000, data=full)
-
-
