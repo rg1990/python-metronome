@@ -12,15 +12,20 @@ class Metronome():
         self.tempo = tempo     # beats per minute
         self.min_tempo = 10
         self.max_tempo = 350
+        assert self.tempo <= self.max_tempo, f"Invalid tempo value: {self.tempo}. Max valid tempo is {self.max_tempo}."
+        assert self.tempo >= self.min_tempo, f"Invalid tempo value: {self.tempo}. Min valid tempo is {self.min_tempo}."
         
         # Used for changing tempo while playing
         self.new_tempo = None   
         self.tempo_change_pending = False
         
         # Beats per bar
-        assert beats_per_bar > 0, "Beats per bar must be greater than zero"
-        self.beats_per_bar = beats_per_bar
+        self.min_beats_per_bar = 1
         self.max_beats_per_bar = 8
+        assert beats_per_bar >= self.min_beats_per_bar, f"Beats per bar must be >= {self.min_beats_per_bar}."
+        assert beats_per_bar <= self.max_beats_per_bar, f"Beats per bar must be <= {self.max_beats_per_bar}."
+        self.beats_per_bar = beats_per_bar
+        
         
         # State attribute
         self.running = False
@@ -267,7 +272,6 @@ class Metronome():
             outdata[:] = data.reshape((-1, 1))
         
     
-
     def get_current_beat(self):
         return self.current_beat
 

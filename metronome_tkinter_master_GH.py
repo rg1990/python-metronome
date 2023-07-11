@@ -1,9 +1,8 @@
-from metronome_master import Metronome
+from metronome_master_GH import Metronome
 import tkinter as tk
 import numpy as np
 import glob
 from PIL import Image, ImageTk
-from scipy.io import wavfile
 
 
 class BeatSoundLabel(tk.Label):
@@ -29,10 +28,13 @@ class App():
     def __init__(self, metro: Metronome):
         self.metro = metro
         
+        # Define the main window properties
         self.root = tk.Tk()
         #self.root = tk.Toplevel()
         self.root.title("Metronome")
-        self.root.geometry("750x850")
+        main_width = 750
+        main_height = 650
+        self.root.geometry(f"{main_width}x{main_height}")
         self.root.configure(background="black")
         
         # Define the paths for images to be loaded
@@ -52,8 +54,8 @@ class App():
         
         # Tempo frame config
         self.tempo_canvas_width = 500
-        self.tempo_canvas_height = 200
-        self.tempo_font_size = 90
+        self.tempo_canvas_height = 160
+        self.tempo_font_size = 60
         self.time_sig_font_size = 60
         
         # Params for coloured beat indicator labels
@@ -65,11 +67,9 @@ class App():
         self.make_widgets()
         
         self.create_label_image_dict()
-        self.build_label_frame()
+        self.populate_label_frame()
+        self.set_up_keyboard_bindings()
         
-        
-        # Bind the space bar to the ui_start_stop method
-        self.root.bind("<space>", self.ui_start_stop)
         # Attach the method for handling window closing
         self.root.protocol("WM_DELETE_WINDOW", self.on_window_closing)
          
@@ -77,7 +77,20 @@ class App():
         for i in range(len(self.labels)-1, self.metro.beats_per_bar-1, -1):
             self.labels[i].pack_forget()
      
-            
+        
+    
+    def set_up_keyboard_bindings(self):
+        # Bind the space bar to the ui_start_stop method
+        self.root.bind("<space>", self.ui_start_stop)
+        # Bind the arrow keys to adjusting the tempo
+        self.root.bind("<Left>", lambda event: self.adjust_tempo(-10))
+        self.root.bind("<Right>", lambda event: self.adjust_tempo(+10))
+        self.root.bind("<Shift-Left>", lambda event: self.adjust_tempo(-5))
+        self.root.bind("<Shift-Right>", lambda event: self.adjust_tempo(+5))
+        
+        self.root.bind("<Up>", lambda event: self.increment_coloured_beat_labels())
+        self.root.bind("<Down>", lambda event: self.decrement_coloured_beat_labels())
+    
     
     def define_image_filepaths(self):
         # Paths with multiple files for use with glob
@@ -88,13 +101,26 @@ class App():
         self.stop_button_path = "./images/stop_button.jpg"
         self.plus_button_path = "./images/plus_button.jpg"
         self.minus_button_path = "./images/minus_button.jpg"
+        
+        self.minus_5_button_path = "./images/minus_5_button.jpg"
+        self.minus_10_button_path = "./images/minus_10_button.jpg"
+        self.plus_5_button_path = "./images/plus_5_button.jpg"
+        self.plus_10_button_path = "./images/plus_10_button.jpg"
     
     
     def load_images(self):
         self.play_button_image = ImageTk.PhotoImage(Image.open(self.play_button_path))
         self.stop_button_image = ImageTk.PhotoImage(Image.open(self.stop_button_path))
-        self.plus_button_image = ImageTk.PhotoImage(Image.open(self.plus_button_path))
-        self.minus_button_image = ImageTk.PhotoImage(Image.open(self.minus_button_path))
+        
+        # Values for resizing buttons
+        new_width = 80
+        new_height = int(0.676 * new_width)
+        self.plus_button_image = ImageTk.PhotoImage(Image.open(self.plus_button_path).resize((new_width, new_height), Image.ANTIALIAS))
+        self.minus_button_image = ImageTk.PhotoImage(Image.open(self.minus_button_path).resize((new_width, new_height), Image.ANTIALIAS))
+        self.minus_5_button_image = ImageTk.PhotoImage(Image.open(self.minus_5_button_path).resize((new_width, new_height), Image.ANTIALIAS))
+        self.minus_10_button_image = ImageTk.PhotoImage(Image.open(self.minus_10_button_path).resize((new_width, new_height), Image.ANTIALIAS))
+        self.plus_5_button_image = ImageTk.PhotoImage(Image.open(self.plus_5_button_path).resize((new_width, new_height), Image.ANTIALIAS))
+        self.plus_10_button_image = ImageTk.PhotoImage(Image.open(self.plus_10_button_path).resize((new_width, new_height), Image.ANTIALIAS))
     
     
     def create_label_image_dict(self):
@@ -116,24 +142,18 @@ class App():
     
     def make_widgets(self):
         self.build_tempo_frame()
-        self.add_tempo_text()
-        self.add_time_sig_text()
+        self.add_canvas_text()
                 
         self.label_frame = tk.Frame(master=self.root)
         self.label_frame.pack(padx=0, pady=(20,20), fill=None, expand=False)
         
-        beat_label = tk.Label(self.root, fg="red", bg="black", textvariable=self.beat_string_var, font=("arkitech", 48))
-        beat_label.pack()
-
-        # self.start_stop_btn_frame = tk.Frame(self.root, width=self.tempo_canvas_width)
-        # self.start_stop_btn_frame.pack()
-        # self.start_stop_button = tk.Button(master=self.start_stop_btn_frame, text="START", width=60, command=self.ui_start_stop)
-        # self.start_stop_button.pack()
-                
+        # Add the text label that will show the current beat
+        # beat_label = tk.Label(self.root, fg="red", bg="black", textvariable=self.beat_string_var, font=("arkitech", 48))
+        # beat_label.pack()
         
-        # Add a slider to control tempo
+        # Add a slider to control tempo, placed inside its own frame
         self.slider_frame = tk.Frame(master=self.root)
-        self.slider_frame.pack(pady=(0, 0))
+        self.slider_frame.pack()
         
         self.tempo_slider = tk.Scale(master=self.slider_frame,
                                      width=50,
@@ -144,54 +164,49 @@ class App():
                                      to=self.metro.max_tempo,
                                      orient=tk.HORIZONTAL)
         
-        
         self.tempo_slider.set(self.metro.tempo)
-        self.tempo_slider.pack(side=tk.BOTTOM)
+        self.tempo_slider.pack()
+        # Attach the command separately to avoid the method getting called
         self.tempo_slider.configure(command=self.set_new_tempo)
 
-
-        self.start_stop_btn_frame = tk.Frame(self.root, width=self.tempo_canvas_width)
+        # Put a start/stop button inside a frame. Set image to a play symbol
+        self.start_stop_btn_frame = tk.Frame(self.root)
         self.start_stop_btn_frame.pack(pady=(20, 20))
-        # self.start_stop_button = tk.Button(master=self.start_stop_btn_frame, text="START", width=60, command=self.ui_start_stop)
         self.start_stop_button = tk.Button(master=self.start_stop_btn_frame, image=self.play_button_image, highlightthickness=0, bd=0, command=self.ui_start_stop)
         self.start_stop_button.pack()
         
-        # Add buttons to adjust the time signature
-        self.time_sig_button_frame = tk.Frame(master=self.root, width=self.tempo_canvas_width, bg='black')#, highlightbackground="red", highlightthickness=2)
-        self.time_sig_button_frame.pack()#, fill='x', expand=True)
+        # Create a frame to pack the tempo/time sig adjustment frames into
+        self.adjust_button_frame = tk.Frame(master=self.root, bg='black')
+        # Create a frame for each of tempo and time sig adjustment buttons
+        self.tempo_adjustment_frame = tk.Frame(master=self.adjust_button_frame, bg='black')
+        self.time_sig_adjustment_frame = tk.Frame(master=self.adjust_button_frame, bg='black')
         
-        time_sig_title = tk.Label(master=self.time_sig_button_frame, text="BEATS PER BAR", fg="white", bg="black")
-        time_sig_title.pack()
-               
-        # Buttons without images
-        # self.reduce_time_sig_button = tk.Button(master=self.time_sig_button_frame, text="-", width=10, height=2, command=self.decrement_coloured_beat_labels)
-        # self.increase_time_sig_button = tk.Button(master=self.time_sig_button_frame, text="+", width=10, height=2, command=self.increment_coloured_beat_labels)
-        
-        # Buttons with images
-        self.reduce_time_sig_button = tk.Button(master=self.time_sig_button_frame, image=self.minus_button_image, highlightthickness=0, bd=0, command=self.decrement_coloured_beat_labels)
-        self.increase_time_sig_button = tk.Button(master=self.time_sig_button_frame, image=self.plus_button_image, highlightthickness=0, bd=0, command=self.increment_coloured_beat_labels)
-        
-        
-        self.reduce_time_sig_button.pack(side=tk.LEFT)#, fill='both', expand=True)
-        self.increase_time_sig_button.pack(side=tk.LEFT)#, fill='x', expand=True)
+        self.adjust_button_frame.pack()
+        self.time_sig_adjustment_frame.pack(side=tk.LEFT, padx=(0, 13))
+        self.tempo_adjustment_frame.pack(side=tk.LEFT, padx=(13, 0))
+                
+        time_sig_adjust_title = tk.Label(master=self.time_sig_adjustment_frame, text="BEATS PER BAR", fg="white", bg="black")
+        tempo_adjust_title = tk.Label(master=self.tempo_adjustment_frame, text="BEATS PER MINUTE", fg="white", bg="black")
+        time_sig_adjust_title.pack()
+        tempo_adjust_title.pack()
 
+        # Tempo/time sig adjustment buttons WITH images
+        reduce_time_sig_button = tk.Button(master=self.time_sig_adjustment_frame, image=self.minus_button_image, highlightthickness=0, bd=0, command=self.decrement_coloured_beat_labels)
+        increase_time_sig_button = tk.Button(master=self.time_sig_adjustment_frame, image=self.plus_button_image, highlightthickness=0, bd=0, command=self.increment_coloured_beat_labels)
+        reduce_time_sig_button.pack(side=tk.LEFT)
+        increase_time_sig_button.pack(side=tk.LEFT)
+
+        # Add tempo adjustment buttons with images instead of text
+        minus_10_button = tk.Button(master=self.tempo_adjustment_frame, image=self.minus_10_button_image, highlightthickness=0, bd=0, command=lambda:self.adjust_tempo(-10))
+        minus_5_button = tk.Button(master=self.tempo_adjustment_frame, image=self.minus_5_button_image, highlightthickness=0, bd=0, command=lambda:self.adjust_tempo(-5))
+        plus_5_button = tk.Button(master=self.tempo_adjustment_frame, image=self.plus_5_button_image, highlightthickness=0, bd=0, command=lambda:self.adjust_tempo(5))
+        plus_10_button = tk.Button(master=self.tempo_adjustment_frame, image=self.plus_10_button_image, highlightthickness=0, bd=0, command=lambda:self.adjust_tempo(10))
         
-        # Add tempo adjustment buttons
-        self.minus_10_button = tk.Button(master=self.time_sig_button_frame, width=7, height=2, text="-10", command=lambda:self.adjust_tempo(-10))
-        self.minus_5_button = tk.Button(master=self.time_sig_button_frame, width=7, height=2, text="-5", command=lambda:self.adjust_tempo(-5))
-        self.plus_5_button = tk.Button(master=self.time_sig_button_frame, width=7, height=2, text="+5", command=lambda:self.adjust_tempo(5))
-        self.plus_10_button = tk.Button(master=self.time_sig_button_frame, width=7, height=2, text="+10", command=lambda:self.adjust_tempo(10))
+        minus_10_button.pack(side=tk.LEFT)
+        minus_5_button.pack(side=tk.LEFT)
+        plus_5_button.pack(side=tk.LEFT)
+        plus_10_button.pack(side=tk.LEFT)
         
-        self.minus_10_button.pack(side=tk.LEFT)
-        self.minus_5_button.pack(side=tk.LEFT)
-        self.plus_5_button.pack(side=tk.LEFT)
-        self.plus_10_button.pack(side=tk.LEFT)
-        
-        
-        # Old +/- buttons for updating metro beats per bar without UI updates
-        # tk.Button(btn_frame, text="+", command=self.metro.increase_beats_per_bar).pack(side=tk.RIGHT)
-        # tk.Button(btn_frame, text="-", command=self.metro.decrease_beats_per_bar).pack(side=tk.LEFT)
-    
         
     def build_tempo_frame(self):
         '''
@@ -210,7 +225,13 @@ class App():
         self.tempo_canvas.pack(side=tk.TOP)
         
         
-    def build_label_frame(self):
+    def populate_label_frame(self):
+        '''
+        Create a number of BeatSoundLabel objects (as many as self.max_beats_per_bar)
+        and add them to a list self.labels. This list will later be used to
+        show or hide the appropriate number of BeatSoundLabel objects in the
+        GUI, according to self.beats_per_bar.
+        '''
         # Build the initial set of BeatSoundLabel objects
         for i, click_idx in enumerate(self.index_array):
             l = BeatSoundLabel(self.label_frame,
@@ -222,53 +243,90 @@ class App():
             
             self.labels.append(l)
             l.pack(side='left', padx=0)
+            # Bind left mouse click to cycle through sound options for this beat
             l.bind("<Button-1>", self.cycle_beat_click_sound)
     
     
-    def add_tempo_text(self):
+    def add_canvas_text(self):
+        '''
+        Add text to the canvas to display information about the current tempo
+        and time signature.
+        '''
+        # Display "tempo" title
+        self.tempo_title_text = self.tempo_canvas.create_text((50, 30),
+                                                              text="Tempo",
+                                                                font=("Seven Segment", 14),
+                                                                fill="red")
+        
+        # Display "time signature" title
+        self.time_sig_title_text = self.tempo_canvas.create_text((400, 30),
+                                                              text="Time Signature",
+                                                                font=("Seven Segment", 14),
+                                                                fill="red")
+        
+        
         # Add "empty" seven segment text underneath the tempo text
-        self.tempo_bg_text = self.tempo_canvas.create_text((self.tempo_canvas_width/2)-100,
-                                                            10 + (self.tempo_canvas_height/2),
-                                                            anchor=tk.CENTER,
+        self.tempo_bg_text = self.tempo_canvas.create_text((105, 100),
                                                             text="888",
                                                             font=("7 Segment", self.tempo_font_size),
-                                                            fill="#290c0b")
+                                                            fill="#3b110f")
         
         # Add the text to display the tempo
-        self.tempo_main_text = self.tempo_canvas.create_text((self.tempo_canvas_width/2)-100,
-                                                                10 + (self.tempo_canvas_height/2),
-                                                                anchor=tk.CENTER,
+        self.tempo_main_text = self.tempo_canvas.create_text((105, 100),
                                                                 text=str(self.metro.tempo),
                                                                 font=("7 Segment", self.tempo_font_size),
                                                                 fill="red")
         
-    
+        
+        # Time signature background empty text
+        time_sig_x_coord = 390
+        self.time_sig_text = self.tempo_canvas.create_text((time_sig_x_coord, 100),
+                                                        text="8 8",
+                                                        font=("7 Segment", self.time_sig_font_size),
+                                                        fill="#3b110f")
+        
+        # Time signature numerical text
+        self.time_sig_text = self.tempo_canvas.create_text((time_sig_x_coord, 100),
+                                                        text=f"{self.metro.beats_per_bar} 4",
+                                                        font=("7 Segment", self.time_sig_font_size),
+                                                        fill="red")
+        
+        # Time sig seven segment slash text
+        self.time_sig_slash = self.tempo_canvas.create_text((time_sig_x_coord, 90),
+                                                        text="/",
+                                                        font=("Seven Segment", self.time_sig_font_size+10),
+                                                        fill="red")
+        
+
     def update_tempo_canvas_text(self, new_val):
+        '''
+        Update the tempo value shown on the canvas. Called when the tempo 
+        value is updated.
+        '''
         # Add a space to the start of the number if it's only 2 digits long
         if len(str(new_val)) == 2:
             new_val = " " + str(new_val)
         
         # Update the tempo value shown with seven segment font
         self.tempo_canvas.itemconfig(self.tempo_main_text, text=new_val)    
+            
     
-    
-    def add_time_sig_text(self):        
-        self.time_sig_text = self.tempo_canvas.create_text((self.tempo_canvas_width/2)+150,
-                                                        (self.tempo_canvas_height/2),
-                                                        anchor=tk.CENTER,
-                                                        text=f"{self.metro.beats_per_bar}/4",
-                                                        font=("Seven Segment", self.time_sig_font_size),
-                                                        fill="red")
-        
-    
-    def update_time_sig_text(self, new_val):
+    def update_time_sig_canvas_text(self, new_val):
+        '''
+        Update the time signature shown on the canvas. Called when the time
+        signature is updated. Note only the top number changes, as the
+        note durations are always considered to be quarter notes.
+        '''
         # Update the time signature value shown with seven segment font
         self.tempo_canvas.itemconfig(self.time_sig_text, text=new_val)
     
     
     def decrement_coloured_beat_labels(self):
+        '''
+        TODO - The GUI and metronome should not be coupled like this.
+        '''
         self.metro.decrease_beats_per_bar()
-        self.update_time_sig_text(new_val=f"{self.metro.beats_per_bar}/4")
+        self.update_time_sig_canvas_text(new_val=f"{self.metro.beats_per_bar} 4")
         
         # Hide some labels to leave only the required number visible
         for i in range(len(self.labels)-1, self.metro.beats_per_bar-1, -1):
@@ -276,8 +334,11 @@ class App():
             
             
     def increment_coloured_beat_labels(self):
+        '''
+        TODO - The GUI and metronome should not be coupled like this.
+        '''
         self.metro.increase_beats_per_bar()
-        self.update_time_sig_text(new_val=f"{self.metro.beats_per_bar}/4")
+        self.update_time_sig_canvas_text(new_val=f"{self.metro.beats_per_bar} 4")
         
         # Make the requested number of labels visible
         for i in range(self.metro.beats_per_bar):
@@ -293,6 +354,9 @@ class App():
         the click sound associated with that beat number is updated to reflect
         this change in appearance.
         
+        The GUI and metronome shouldn't be coupled like this. Have a separate
+        Controller class. (to do).
+        
         '''
         # Cyclically increment the click_sound_index for the label
         event.widget.click_sound_index = (event.widget.click_sound_index + 1) % 3
@@ -305,35 +369,17 @@ class App():
         
         # Update the metronome's dictionary that holds the samples to play on each beat
         self.metro.update_beat_sample_dict(self.index_array)
-        
-        # Debugging print statements
-        # print(f"Widget index: {event.widget.click_sound_index}. Label index: {event.widget.label_list_index}")
-        # print(self.beat_state_array)
-        # print(self.beat_state_array[event.widget.label_list_index])
-    
-    
-    def blank_out_coloured_beat_labels(self):
-        '''
-        Reset all of the coloured beat/click sound labels to their "off" state.
-        This means that none of them will be coloured blue, for the current beat.
-        It should be in this state when the metronome is not running.
-        '''
-        self.beat_state_array = np.array(["off" for i in range(len(self.index_array))])
-            
-        for i in range(len(self.labels)):
-            self.labels[i].config(image=self.img_dict["off"][self.index_array[i]], bg="#a8a8a8")
-            
+                    
             
     def set_coloured_beat_labels(self, idx=None):
         '''
         A method used to highlight exactly one of the coloured beat labels 
         to indicate the current beat number of the metronome.
         
-        '''
+        If idx is None, all of the labels are set to the "off" state. This is
+        useful for when the metronome is not running.
         
-        # TODO - We can get rid of the method "blank_out_coloured_beat_labels" (DRY)
-        # because we can achieve the same thing by calling set_coloured_beat_labels
-        # and passing no argument for idx.
+        '''
         
         # Set all label beat states to "off"
         self.beat_state_array = np.array(["off" for i in range(len(self.index_array))])
@@ -351,11 +397,11 @@ class App():
     def increment_active_beat_label(self):
         # Update beat labels so the label for the current beat is highlighted
         # First, set them all to be "off"
-        self.blank_out_coloured_beat_labels()
+        self.set_coloured_beat_labels(idx=None)
         
         # Get the index corresponding to the current beat
-        if self.metro.current_beat != 0:
-            label_idx = self.metro.current_beat - 1
+        if self.metro.get_current_beat() != 0:
+            label_idx = self.metro.get_current_beat() - 1
         else:
             label_idx = 0
         
@@ -364,6 +410,12 @@ class App():
     
 
     def update_beat_number_from_metro(self):
+        '''
+        Use the current beat number from the Metronome object to update the
+        text label that shows the current beat in the GUI. tkinter's "after"
+        method is used here to check for an updated beat number every 10ms.
+        There's nothing special about this duration, it just seems to work nicely.
+        '''
         
         beat_to_show = self.metro.get_current_beat()
         # This is a bit of a hack. Don't display beat 0 - change it to 1
@@ -371,8 +423,6 @@ class App():
             beat_to_show = 1
 
         if self.beat_currently_shown != beat_to_show:
-            #print(f"arr: {self.beat_state_array}")
-            #print(beat_to_show)
             self.increment_active_beat_label()
             
         self.beat_string_var.set(beat_to_show)
@@ -383,10 +433,12 @@ class App():
         
     
     def set_new_tempo(self, new_val):
+        # TODO - input validation & decouple GUI from metronome
+        
         self.metro.set_new_tempo(new_val)
         self.update_tempo_canvas_text(new_val)
         # Setting the tempo slider value in this way calls this method I think
-        # Could use a tk.DoubleVar to prevent this maybe?
+        # Could use a tk.DoubleVar to prevent this?
         self.tempo_slider.set(new_val)
         # Debugging print       
         # print(f"In set_new_tempo: {self.metro.tempo}")
@@ -394,50 +446,38 @@ class App():
     
     def adjust_tempo(self, adjustment):
         '''
-        Make adjustments to the tempo rather than specifying an actual tempo
-        value. This is useful for including buttons to move +/- 10 bpm.
-        
-        This method may also be useful for a speed trainer.
+        Make adjustments to the tempo rather than specifying an absolute tempo
+        value. This is connected to the buttons to move +/- N bpm.
         '''
-        # new_tempo = self.metro.tempo + adjustment
-        new_tempo = int(self.tempo_slider.get() + adjustment)
-        # Debugging print       
-        # print(f"In adjust_tempo: {new_tempo}")
+        new_tempo = int(self.tempo_slider.get() + adjustment)  
         self.set_new_tempo(new_tempo)
     
     
     def start(self):
         if not self.metro.running:
-            #print("STARTING...")
             self.metro.start()
-            # Update the coloured thing to show the first beat blue
+            # Update the coloured labels to show the first beat blue
             self.set_coloured_beat_labels(idx=0)
             self.update_beat_number_from_metro()
     
     
     def stop(self):
         if self.metro.running:
-            #print("STOPPING...")
             self.metro.stop()
-            #print(f"In App stop() method. Metro current_beat: {self.metro.current_beat}")
             self.root.after_cancel(self.after_loop)
-            # Reset the beat number and coloured bars
+            # Blank out the displayed beat number and the coloured labels
             self.beat_string_var.set("")
-            #print(self.beat_state_array)
-            self.blank_out_coloured_beat_labels()
-            #print(self.beat_state_array)
+            self.set_coloured_beat_labels(idx=None)
     
     
     def ui_start_stop(self, event=None):
         if self.metro.running:
-            # Stop the metronome and update the button text
+            # Stop the metronome and update the button image
             self.stop()
-            #self.start_stop_button.config(text="START")
             self.start_stop_button.config(image=self.play_button_image)
         else:
-            # Start the metronome and update the button text
+            # Start the metronome and update the button image
             self.start()
-            #self.start_stop_button.config(text="STOP")
             self.start_stop_button.config(image=self.stop_button_image)
     
     
@@ -445,5 +485,3 @@ class App():
         # Stop the metronome when the user closes the window
         self.stop()
         self.root.destroy()
-        
-
