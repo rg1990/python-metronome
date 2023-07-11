@@ -8,27 +8,29 @@ import threading
 
 class Metronome():
     def __init__(self, tempo=180, beats_per_bar=4):
-        # Split some of this setup stuff into methods
-        self.tempo = tempo     # beats per minute
+        # Define limits for tempo and beats_per_bar
         self.min_tempo = 10
         self.max_tempo = 350
-        assert self.tempo <= self.max_tempo, f"Invalid tempo value: {self.tempo}. Max valid tempo is {self.max_tempo}."
-        assert self.tempo >= self.min_tempo, f"Invalid tempo value: {self.tempo}. Min valid tempo is {self.min_tempo}."
+        self.min_beats_per_bar = 1
+        self.max_beats_per_bar = 8
+        
+        # Input validation
+        if tempo < self.min_tempo or tempo > self.max_tempo:
+            raise Exception(f"Tempo must be between {self.min_tempo} and {self.max_tempo}.")
+        
+        if beats_per_bar < self.min_beats_per_bar or beats_per_bar > self.max_beats_per_bar:
+            raise Exception(f"Value for beats_per_bar must be between {self.min_beats_per_bar} and {self.max_beats_per_bar}.")
+        
+        
+        self.tempo = tempo
+        self.beats_per_bar = beats_per_bar
+        
+        # State attribute
+        self.running = False
         
         # Used for changing tempo while playing
         self.new_tempo = None   
         self.tempo_change_pending = False
-        
-        # Beats per bar
-        self.min_beats_per_bar = 1
-        self.max_beats_per_bar = 8
-        assert beats_per_bar >= self.min_beats_per_bar, f"Beats per bar must be >= {self.min_beats_per_bar}."
-        assert beats_per_bar <= self.max_beats_per_bar, f"Beats per bar must be <= {self.max_beats_per_bar}."
-        self.beats_per_bar = beats_per_bar
-        
-        
-        # State attribute
-        self.running = False
         
         # Load and define the arrays of samples for different click sounds
         self.fs = 16000     # sample rate of audio, in Hz
@@ -77,7 +79,6 @@ class Metronome():
         self.drift_error_per_block = self.compute_drift_error_per_block()
         self.samples_to_shift = 0
         
-
         # For plotting and saving to WAV for analysis
         self.full_output = []
         # Store the "tail" of a click that spans 2 adjacent arrays of size self.BLOCKSIZE

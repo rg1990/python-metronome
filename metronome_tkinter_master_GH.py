@@ -433,8 +433,9 @@ class App():
         
     
     def set_new_tempo(self, new_val):
-        # TODO - input validation & decouple GUI from metronome
-        
+        # TODO - decouple GUI from metronome
+        if int(new_val) > self.metro.max_tempo or int(new_val) < self.metro.min_tempo:
+            return
         self.metro.set_new_tempo(new_val)
         self.update_tempo_canvas_text(new_val)
         # Setting the tempo slider value in this way calls this method I think
