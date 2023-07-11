@@ -1,0 +1,4 @@
+audiofile==1.2.1
+numpy==1.19.2
+Pillow==8.2.0
+sounddevice==0.4.1
