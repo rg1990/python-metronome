@@ -55,6 +55,7 @@ This is a high-precision desktop metronome application developed in Python. The 
 ## To Do / Future Development
 To do:
 - Decouple the GUI and metronome code. Perhaps create a Controller class and build using a model-view-controller architecture.
+- Dynamically resize the coloured beat indicator blocks when the time signature is changed.
 - ~~Implement input validation for tempo change buttons to ensure tempo stays within range.~~
 
 Future:
