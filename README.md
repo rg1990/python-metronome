@@ -55,7 +55,7 @@ This is a high-precision desktop metronome application developed in Python. The 
 ## To Do / Future Development
 To do:
 - Decouple the GUI and metronome code. Perhaps create a Controller class and build using a model-view-controller architecture.
-- Implement input validation for tempo change buttons to ensure tempo stays within range.
+- ~~Implement input validation for tempo change buttons to ensure tempo stays within range.~~
 
 Future:
 - Speed trainer feature: Schedule tempo increases within a specified tempo range, every user-specified number of bars.
