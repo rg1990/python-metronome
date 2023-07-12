@@ -10,10 +10,10 @@ This is a high-precision desktop metronome application developed in Python. The 
 - Time signature customisation: Users can vary the number of beats per bar, enabling them to practice in different time signatures.
 - Adjustments during playback: Adjustments to the tempo and/or time signature during playback are handled smoothly, minimising interruptions.
 - Visual and auditory cues: The metronome provides both visual and auditory cues to help users stay on beat. It generates a click sound and also displays an animated visual indicator synchronised with the beat.
-- Beat-specific sounds: For every beat in the bar, the click sound can be chosen from **accented**, **regular**, or **silent**, allowing for varied click patterns.
+- Beat-specific sounds: For every beat in the bar, the sound can be changed by clicking on the coloured block for a particular beat, allowing for varied click patterns. The available sound options are: **accented**, **regular**, or **silent**.
 
 ![metronome_example](https://github.com/rg1990/python-metronome/assets/70291897/506adb84-6e0f-4796-afd1-4f124832152b)
-(Left: metronome in 'stopped' state. Right: metronome in 'playing' state, with customised beat pattern and visual cue (blue) highlighting current beat.)
+(Left: metronome in 'stopped' state. Right: metronome in 'playing' state, with customised beat pattern and visual cue (blue) highlighting the current beat.)
 
 
 ![metronome_drift_without_correction](https://github.com/rg1990/python-metronome/assets/70291897/4224202b-bf8b-4d2e-922f-325c4d328a4e)
@@ -55,7 +55,8 @@ This is a high-precision desktop metronome application developed in Python. The 
 ## To Do / Future Development
 To do:
 - Decouple the GUI and metronome code. Perhaps create a Controller class and build using a model-view-controller architecture.
-- Implement input validation for tempo change buttons to ensure tempo stays within range.
+- Dynamically resize the coloured beat indicator blocks when the time signature is changed.
+- ~~Implement input validation for tempo change buttons to ensure tempo stays within range.~~
 
 Future:
 - Speed trainer feature: Schedule tempo increases within a specified tempo range, every user-specified number of bars.
