@@ -100,6 +100,22 @@ class Metronome():
     #     self.trainer_active = False
         
         
+    
+    def pre_fill_queue(self):
+        # Range is (BUFFERSIZE-1) because the first callback will add a block too
+        # and otherwise we get an exception because the queue is already full.
+        for _ in range(self.BUFFERSIZE-1):
+            next_audio_block, beat = self.get_next_audio_block()
+            # Debugging print statements to check output
+            # print(f"Mean: {np.mean(next_audio_block)}")
+            # print(f"Queue size before putting: {self.q.qsize()}")
+            if not len(next_audio_block):
+                break
+            self.q.put_nowait([next_audio_block, beat])
+            # Append the new audio block to full_output for later examination
+            self.full_output.append(next_audio_block)
+    
+    
     def create_stream(self):        
         # Create an OutputStream instance
         return sd.OutputStream(samplerate=self.fs,
@@ -182,6 +198,8 @@ class Metronome():
             #print(f"Queue is empty?: {self.q.empty()}")
             # TODO - pre-fill the queue with some audio blocks
             try:
+                # New - fill the queue with BUFFERSIZE blocks before playing
+                self.pre_fill_queue()
                 self.stream.start()
                 self.running = True
             except:
@@ -201,6 +219,9 @@ class Metronome():
             self.bars_to_play_at_tempo = None
             self.total_samples_delivered = 0
             self.num_samples_until_next_click = 0
+            # Delete the queue and make a new one to clear out the contents
+            del self.q
+            self.q = queue.Queue(self.BUFFERSIZE)
        
             
     def compute_drift_error_per_block(self):
@@ -422,6 +443,5 @@ class Metronome():
         print(f"The click sound contains {self.num_samples_in_click} samples.")
         print(f"There are {self.num_samples_until_next_click} samples until the next click should start.")
         print(f"The integer number of samples per beat is {self.interval}.")
-      
         
-      
+        
