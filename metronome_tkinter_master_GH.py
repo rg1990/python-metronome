@@ -399,9 +399,13 @@ class App():
         # First, set them all to be "off"
         self.set_coloured_beat_labels(idx=None)
         
-        # Get the index corresponding to the current beat
-        if self.metro.get_current_beat() != 0:
-            label_idx = self.metro.get_current_beat() - 1
+        # Get the index corresponding to the current beat (only syncs without pre-filling queue)
+        # if self.metro.get_current_beat() != 0:
+        #     label_idx = self.metro.get_current_beat() - 1
+        
+        # Use beat_to_show when pre-filling the queue with audio blocks
+        if self.metro.beat_to_show != 0:
+            label_idx = self.metro.beat_to_show - 1
         else:
             label_idx = 0
         
@@ -417,7 +421,10 @@ class App():
         There's nothing special about this duration, it just seems to work nicely.
         '''
         
-        beat_to_show = self.metro.get_current_beat()
+        #beat_to_show = self.metro.get_current_beat()
+        # Use beat_to_show when pre-filling the queue with audio blocks
+        beat_to_show = self.metro.beat_to_show
+        
         # This is a bit of a hack. Don't display beat 0 - change it to 1
         if beat_to_show == 0:
             beat_to_show = 1
